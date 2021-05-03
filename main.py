@@ -30,21 +30,31 @@ def create_random_elliptic(n: int):
     x_0, y_0 = create_random_point(n)
     a = np.random.randint(n)
     b = (pow(y_0, 2, n) - pow(x_0, 3, n) - a * x_0) % n
+
+    # This condition should be useless
+    assert(valid_point(x_0, y_0, a, b, n))
+
     return [a, b, x_0, y_0]
 
 
 def inv_mod_n(n: int, x: int):
     assert (np.gcd(n, x) == 1)
 
-    # Using fermat theorem + gcd(n, x) == 1
-    return pow(x, n - 2, n)
+    # To compute the inverse of
+    return pow(x, -1, n)
 
-
+"""
 def elliptic_inverse(n: int, x_p: int, y_p: int):
     return x_p, (-y_p) % n
+"""
 
 
-def elliptic_addition(n: int, a: int, b:int, x_p: int, y_p: int, x_q: int, y_q: int):
+def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1, y_q: int = -1):
+    if x_q < 0:
+        x_q = x_p
+    if y_q < 0:
+        y_q = y_p
+
     assert (0 <= x_p < n and 0 <= x_q < n and 0 <= y_p < n and 0 <= y_q < n)
 
     if x_p != x_q:
@@ -52,8 +62,8 @@ def elliptic_addition(n: int, a: int, b:int, x_p: int, y_p: int, x_q: int, y_q: 
         u = (y_p - y_q) % n
         v = (x_p - x_q)
     elif y_p != 0:
-        u = (3 * pow(x_p, 2) + a) % n
-        v = (2 * y_p) % n
+        u = (3 * pow(x_p, 2, n) + a) % n
+        v = (2 * y_p)
     else:
         # Either P, Q or P + Q is the origin which we are not interested in.
         return 2, []
@@ -67,7 +77,27 @@ def elliptic_addition(n: int, a: int, b:int, x_p: int, y_p: int, x_q: int, y_q: 
     s = (u * v) % n
     x_r = (pow(s, 2) - x_p - x_q) % n
     y_r = (y_p + s * (x_r - x_p)) % n
-    assert(valid_point(x_r, y_r, a, b, n))
+    print(x_p, y_p, x_r, y_r, a, b, n)
+
+    assert (valid_point(x_r, y_r, a, b, n))
+
     return 1, [x_r, y_r]
 
 
+def lenstra(n: int):
+    # TODO add fast calculus of k * P where P is a point on the curve
+    a, b, x, y = create_random_elliptic(n)
+
+    ret_code, res = elliptic_addition(n, a, b, x, y)
+    compteur = 0
+    while ret_code != 0:
+        print(compteur)
+        if ret_code == 1:
+            # We have computed a new point, go further
+            ret_code, res = elliptic_addition(n, a, b, res[0], res[1])
+        elif ret_code == 2:
+            # We found the origin as a sum, change the curve
+            a, b, x, y = create_random_elliptic(n)
+            ret_code, res = elliptic_addition(n, a, b, x, y)
+
+    return res
