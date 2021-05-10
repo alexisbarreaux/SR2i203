@@ -4,7 +4,8 @@
 import unittest
 from main import *
 
-n = 11*17
+n = 11 * 17
+
 
 class TestElliptic(unittest.TestCase):
 
@@ -34,7 +35,24 @@ class TestElliptic(unittest.TestCase):
                     x4_bis, y4_bis = l4_bis
                     self.assertTrue([x4, y4] == [x4_bis, y4_bis])
 
+    """
+    def test_multiplication(self, k=7):
+        assert (k > 0)
+        print(k)
+        a, b, x, y = create_random_elliptic(n)
+        ret, l = elliptic_multiplication(n, a, b, x, y, k)
+        if ret != 1:
+            self.test_multiplication(k - 1)
+        else:
+            x_temp, y_temp = x, y
+            for i in range(k - 1):
+                ret, l2 = elliptic_addition(n, a, b, x, y, x_temp, y_temp)
+                if ret == 1:
+                    x_temp, y_temp = l2
+                else:
+                    self.test_multiplication(k)
+            self.assertTrue(l == [x_temp, y_temp])
+    """
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -1,5 +1,5 @@
 import numpy as np
-
+from math import factorial as fact
 
 # https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization#Algorithm
 # https://stackoverflow.com/questions/31074172/elliptic-curve-point-addition-over-a-finite-field-in-python
@@ -77,11 +77,15 @@ def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1,
     # This y is the opposite of what we want.
     y_r = (y_p + s * (x_r - x_p)) % n
     y_r = (-y_r) % n
+
     assert (valid_point(x_r, y_r, a, b, n))
     assert (valid_point(x_r, -y_r, a, b, n))
+
     return 1, [x_r, y_r]
 
 
+# This function is working but might not be needed since calculating k * P this way may go over a case where
+# j * P returns an error and a factor of n, with j < k and overlooked by this method.
 def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
     """
     Method inspired of quick exponentiation used to compute k times the point P = (x, y) on an elliptic curve.
@@ -95,7 +99,9 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
     """
     assert(type(k) == int)
 
-    if k == 1:
+    if k == 0:
+        return 2, []
+    elif k == 1:
         # We return P
         return 1, [x, y]
     elif k == 2:
@@ -132,17 +138,9 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
 def lenstra(n: int):
 
     a, b, x, y = create_random_elliptic(n)
-
-    ret_code, res = elliptic_addition(n, a, b, x, y)
-    compteur = 0
-    while ret_code != 0:
-        print(compteur)
-        if ret_code == 1:
-            # We have computed a new point, go further
-            ret_code, res = elliptic_addition(n, a, b, res[0], res[1])
-        elif ret_code == 2:
-            # We found the origin as a sum, change the curve
-            a, b, x, y = create_random_elliptic(n)
-            ret_code, res = elliptic_addition(n, a, b, x, y)
-
-    return res
+    k = fact(20)
+    ret_code, res = elliptic_multiplication(n, a, b, x, y, k)
+    if ret_code == 0:
+        return res
+    else:
+        return lenstra(n)
