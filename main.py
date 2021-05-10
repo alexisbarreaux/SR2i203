@@ -144,3 +144,7 @@ def lenstra(n: int):
         return res
     else:
         return lenstra(n)
+
+
+if __name__ == "__main__":
+    print(lenstra(7919 * 7321))
