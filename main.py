@@ -6,6 +6,15 @@ from math import factorial as fact
 
 
 def valid_point(x: int, y: int, a: int, b: int, n: int):
+    """
+    Checks if a points is on an elliptic curve given by parameters.
+    :param x: abciss
+    :param y: ordinate
+    :param a: first parameter of the curve
+    :param b: second parameter
+    :param n: modulus parameter.
+    :return:
+    """
     return (pow(y, 2) % n) == ((pow(x, 3) + a * x + b) % n)
 
 
@@ -35,6 +44,9 @@ def create_random_elliptic(n: int):
 
 
 def inv_mod_n(n: int, x: int):
+    """
+    Returns the inverse of x modulus n.
+    """
     assert (np.gcd(n, x) == 1)
 
     # To compute the inverse of
@@ -48,6 +60,9 @@ def elliptic_inverse(n: int, x_p: int, y_p: int):
 
 
 def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1, y_q: int = -1):
+    """
+    Returns the sum of P = (x_p, y_p) and Q = (x_q, y_q) on a curve. If Q is not given, returns 2P.
+    """
     if x_q < 0:
         x_q = x_p
     if y_q < 0:
@@ -89,13 +104,6 @@ def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1,
 def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
     """
     Method inspired of quick exponentiation used to compute k times the point P = (x, y) on an elliptic curve.
-    :param n:
-    :param a:
-    :param b:
-    :param x:
-    :param y:
-    :param k:
-    :return:
     """
     assert(type(k) == int)
 
@@ -136,7 +144,9 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
 
 
 def lenstra(n: int):
-
+    """
+    Method resorting to elliptic curves to try and find a factor of n.
+    """
     a, b, x, y = create_random_elliptic(n)
     k = fact(20)
     ret_code, res = elliptic_multiplication(n, a, b, x, y, k)
