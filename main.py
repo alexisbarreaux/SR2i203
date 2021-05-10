@@ -31,9 +31,6 @@ def create_random_elliptic(n: int):
     a = np.random.randint(n)
     b = (pow(y_0, 2, n) - pow(x_0, 3, n) - a * x_0) % n
 
-    # This condition should be useless
-    assert(valid_point(x_0, y_0, a, b, n))
-
     return [a, b, x_0, y_0]
 
 
@@ -42,6 +39,7 @@ def inv_mod_n(n: int, x: int):
 
     # To compute the inverse of
     return pow(x, -1, n)
+
 
 """
 def elliptic_inverse(n: int, x_p: int, y_p: int):
@@ -76,16 +74,63 @@ def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1,
 
     s = (u * v) % n
     x_r = (pow(s, 2) - x_p - x_q) % n
+    # This y is the opposite of what we want.
     y_r = (y_p + s * (x_r - x_p)) % n
-    print(x_p, y_p, x_r, y_r, a, b, n)
-
+    y_r = (-y_r) % n
     assert (valid_point(x_r, y_r, a, b, n))
-
+    assert (valid_point(x_r, -y_r, a, b, n))
     return 1, [x_r, y_r]
 
 
+def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
+    """
+    Method inspired of quick exponentiation used to compute k times the point P = (x, y) on an elliptic curve.
+    :param n:
+    :param a:
+    :param b:
+    :param x:
+    :param y:
+    :param k:
+    :return:
+    """
+    assert(type(k) == int)
+
+    if k == 1:
+        # We return P
+        return 1, [x, y]
+    elif k == 2:
+        # We return the result of P + P
+        return elliptic_addition(n, a, b, x, y)
+
+    else:
+        if k % 2 == 0:
+            # We want to return k//2 * P + k//2 * P
+            ret_code, l = elliptic_multiplication(n, a, b, x, y, k//2)
+
+            # However we must check if k//2 * P is indeed a true point or not.
+            if ret_code == 1:
+                x2, y2 = l
+                return elliptic_addition(n, a, b, x2, y2)
+            else:
+                return ret_code, l
+
+        else:
+            # We want to return P * k//2 * P + k//2 * P
+            ret_code, l = elliptic_multiplication(n, a, b, x, y, (k - 1) // 2)
+            if ret_code == 1:
+                x2, y2 = l
+                ret_code2, l2 = elliptic_addition(n, a, b, x2, y2)
+                if ret_code2 == 1:
+                    x3, y3 = l2
+                    return elliptic_addition(n, a, b, x, y, x3, y3)
+                else:
+                    return ret_code2, l2
+            else:
+                return ret_code, l
+
+
 def lenstra(n: int):
-    # TODO add fast calculus of k * P where P is a point on the curve
+
     a, b, x, y = create_random_elliptic(n)
 
     ret_code, res = elliptic_addition(n, a, b, x, y)
