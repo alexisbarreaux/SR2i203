@@ -240,27 +240,35 @@ def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int
                 return ret_code, l
 
 
-def lenstra(n: int, quick=True, use_loop=True, loop=0, fact_size=7):
+def lenstra(n: int, quick=True, use_loop=True, loop=1, fact_size=7, ret_loop=False):
     """
     Method resorting to elliptic curves to try and find a factor of n.
     Loop helps to ensure we don't have an infinite recursion
     """
     a, b, x, y = create_random_elliptic(n)
-    k = fact(fact_size)
+
     if quick:
+        k = fact(25)
         ret_code, res = quick_elliptic_multiplication(n, a, b, x, y, k)
     else:
+        k = fact(fact_size)
         ret_code, res = elliptic_multiplication(n, a, b, x, y, k)
 
     if ret_code == 0:
-        return res
+        if ret_loop:
+            return res, loop
+        else:
+            return res
     else:
-        if use_loop and loop > 10:
+        if use_loop and loop > 30:
+            if ret_loop:
+                return res, loop
             return res
         else:
-            return lenstra(n, quick, use_loop, loop + 1)
+            return lenstra(n, quick, use_loop, loop + 1,fact_size, ret_loop)
 
 
+# Slow but useful method
 def list_primes(n: int):
     """
     Function using our lenstra function to list primes.
@@ -306,6 +314,29 @@ def study_speed_lenstra(n: int, k: int):
             times_quick.append(time() - t)
             x_quick.append(n)
 
+    res = np.array(times_slow) / np.array(times_quick)
+    plt.clf()
+    plt.title("Study on the time ratio \n between normal multiplication and our quick version.")
+    plt.grid()
+    plt.xlabel("Integer to factorize")
+    plt.ylabel("Time difference")
+    plt.scatter(x_slow, res, marker="x", c="b", label="Normal time / Quick time")
+    plt.legend()
+    plt.show()
+
+    """
+    res = np.array(times_slow) - np.array(times_quick)
+    plt.clf()
+    plt.title("Study on the time difference \n between normal multiplication and our quick version.")
+    plt.grid()
+    plt.xlabel("Integer to factorize")
+    plt.ylabel("Time difference")
+    plt.scatter(x_slow, res, marker="x", c="b", label="Normal time - Quick time")
+    plt.legend()
+    plt.show()
+    """
+
+    """
     plt.clf()
     plt.title("Study on the time efficiency \n of the normal multiplication and our quick version.")
     plt.grid()
@@ -315,12 +346,50 @@ def study_speed_lenstra(n: int, k: int):
     plt.scatter(x_quick, times_quick, marker="+", c="b", label="Fast multiplication")
     plt.legend()
     plt.show()
-
+    """
     print(len(x_slow), len(x_quick), k)
+
     return
+
+
+def study_loops(n: int, k: int):
+    primes = list_primes(n)
+    N = len(primes)
+    loops = []
+
+    for _ in range(k):
+        a = np.random.randint(N)
+        b = np.random.randint(N)
+        # We don't want the same prime twice.
+        if a == b:
+            b = (a + 1) % len(primes)
+
+        n = int(primes[a] * primes[b])
+        res_quick, loop = lenstra(n, True, True, 1, 7, True)
+        if len(res_quick) == 1:
+            loops.append(loop)
+
+    loops = np.array(loops)
+    counts = np.bincount(loops)
+    freq = 100*(counts / len(loops))
+    y = np.zeros(30)
+
+    for i in range(len(freq)):
+        y[i] = freq[i]
+
+    x = np.arange(30)
+    plt.clf()
+    plt.title(f"Frequency of each loop size on {k} integers.")
+    plt.grid()
+    plt.xlabel("Number of loops")
+    plt.ylabel("Frequency")
+    plt.scatter(x, y, marker="x", c="b", label="Frequencies")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
     # print(lenstra(2 * 3))
     # plot_elliptic_in_z(59, True)
-    study_speed_lenstra(2000, 300)
+    # study_speed_lenstra(5000, 100)
+    study_loops(50000, 10000)
