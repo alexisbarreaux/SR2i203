@@ -9,6 +9,7 @@ from time import time
 
 sys.setrecursionlimit(10000)
 
+
 def valid_point(x: int, y: int, a: int, b: int, n: int):
     """
     Checks if a points is on an elliptic curve given by parameters.
@@ -183,6 +184,10 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
         if ret_code == 1:
             x2, y2 = l
             return elliptic_addition(n, a, b, x, y, x2, y2)
+        elif ret_code == 2:
+            # At some point we encountered a sum such that we reached the infinite O, catching it as soon as it arises,
+            # we ensure we just have to give back our point.
+            return 1, [x, y]
         else:
             return ret_code, l
 
@@ -214,10 +219,11 @@ def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int
                 x2, y2 = l
                 return elliptic_addition(n, a, b, x2, y2)
             else:
+                # Either the result was O and we can't do more or we found a factor and want to give it.
                 return ret_code, l
 
         else:
-            # We want to return P * k//2 * P + k//2 * P
+            # We want to return P +  k//2 * P + k//2 * P
             ret_code, l = quick_elliptic_multiplication(n, a, b, x, y, (k - 1) // 2)
             if ret_code == 1:
                 x2, y2 = l
@@ -227,11 +233,14 @@ def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int
                     return elliptic_addition(n, a, b, x, y, x3, y3)
                 else:
                     return ret_code2, l2
+            elif ret_code == 2:
+                # K//2 * P is O, thus our current result is just P
+                return 1, [x, y]
             else:
                 return ret_code, l
 
 
-def lenstra(n: int, quick=True, loop=0, fact_size = 7):
+def lenstra(n: int, quick=True, use_loop=True, loop=0, fact_size=7):
     """
     Method resorting to elliptic curves to try and find a factor of n.
     Loop helps to ensure we don't have an infinite recursion
@@ -246,10 +255,10 @@ def lenstra(n: int, quick=True, loop=0, fact_size = 7):
     if ret_code == 0:
         return res
     else:
-        if loop <= 5:
-            return lenstra(n, quick, loop + 1)
-        else:
+        if use_loop and loop > 10:
             return res
+        else:
+            return lenstra(n, quick, use_loop, loop + 1)
 
 
 def list_primes(n: int):
@@ -279,7 +288,11 @@ def study_speed_lenstra(n: int, k: int):
     for _ in range(k):
         a = np.random.randint(N)
         b = np.random.randint(N)
-        n = int(primes[a]*primes[b])
+        # We don't want the same prime twice.
+        if a == b:
+            b = (a + 1) % len(primes)
+
+        n = int(primes[a] * primes[b])
 
         t = time()
         res_slow = lenstra(n, False)
@@ -287,10 +300,10 @@ def study_speed_lenstra(n: int, k: int):
             times_slow.append(time() - t)
             x_slow.append(n)
 
-        t= time()
+        t = time()
         res_quick = lenstra(n)
         if len(res_quick) == 1:
-            times_quick.append(time() -t)
+            times_quick.append(time() - t)
             x_quick.append(n)
 
     plt.clf()
@@ -303,11 +316,11 @@ def study_speed_lenstra(n: int, k: int):
     plt.legend()
     plt.show()
 
-    print(len(x_slow), len(x_quick), len(primes))
+    print(len(x_slow), len(x_quick), k)
     return
 
 
 if __name__ == "__main__":
-    #print(lenstra(2 * 3))
+    # print(lenstra(2 * 3))
     # plot_elliptic_in_z(59, True)
-    study_speed_lenstra(2000, 250)
+    study_speed_lenstra(2000, 300)
