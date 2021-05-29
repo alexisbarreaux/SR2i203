@@ -1,5 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from math import factorial as fact
+
 
 # https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization#Algorithm
 # https://stackoverflow.com/questions/31074172/elliptic-curve-point-addition-over-a-finite-field-in-python
@@ -27,6 +29,7 @@ def create_random_point(n: int):
     return np.random.randint(n), np.random.randint(n)
 
 
+# TODO use other specific types of curves such as Edward curves ?
 def create_random_elliptic(n: int):
     """
     Returns the equation of a random elliptic curve and a non trivial point on this curve.
@@ -40,7 +43,66 @@ def create_random_elliptic(n: int):
     a = np.random.randint(n)
     b = (pow(y_0, 2, n) - pow(x_0, 3, n) - a * x_0) % n
 
+    if 4 * pow(a, 3, n) + 27 * pow(b, 2, n) == 0:
+        return create_random_elliptic(n)
+
     return [a, b, x_0, y_0]
+
+
+def plot_elliptic_real_curve(n: int):
+    """
+    Plots a random elliptic curve on R.
+    :return:
+    """
+    # Thanks to : https://stackoverflow.com/questions/19756043/python-matplotlib-elliptic-curves
+    [a, b, _, _] = create_random_elliptic(n)
+    plt.clf()
+    plt.title(f"Elliptic curve for a = {a} and b = {b}")
+
+    y, x = np.ogrid[-10:10:100j, -10:10:100j]
+    plt.contour(x.ravel(), y.ravel(), pow(y, 2) - pow(x, 3) - x * a - b, [0])
+    plt.grid()
+    plt.show()
+
+
+def plot_elliptic_in_z(n: int, plot_points = False):
+    """
+    Plots an elliptic curve on Z/nZ, can also add points calculated on it.
+    :param n: The n in Z/nZ
+    :param plot_points: Boolean to know wether to plot points or not.
+    """
+    [a, b, x, y] = create_random_elliptic(n)
+    abscisses = [x]
+    ordinates = [y]
+
+    possibilities = np.arange(n)
+    for i in possibilities:
+        for j in possibilities:
+            if valid_point(i, j, a, b, n):
+                abscisses.append(i)
+                ordinates.append(j)
+
+    plt.clf()
+    plt.title(f"Elliptic curve on Z/pZ for a = {a} and b = {b} and p = {n}")
+    plt.scatter(abscisses, ordinates)
+    ax = plt.gca()
+    plt.grid()
+
+    if plot_points:
+        sum_x = [x]
+        sum_y = [y]
+        ax.annotate("P", (x, y), xytext=(10, 10), textcoords='offset points')
+        for i in range(6):
+            ret, l = elliptic_addition(n, a, b, x, y)
+            if ret == 1:
+                x, y = l
+                sum_x.append(x)
+                sum_y.append(y)
+                ax.annotate(f"{i+2}P", (x, y), xytext=(10, 10), textcoords='offset points')
+
+        plt.scatter(sum_x, sum_y, marker="x", c="r")
+
+    plt.show()
 
 
 def inv_mod_n(n: int, x: int):
@@ -101,11 +163,11 @@ def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1,
 
 # This function is working but might not be needed since calculating k * P this way may go over a case where
 # j * P returns an error and a factor of n, with j < k and overlooked by this method.
-def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
+def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
     """
     Method inspired of quick exponentiation used to compute k times the point P = (x, y) on an elliptic curve.
     """
-    assert(type(k) == int)
+    assert (type(k) == int)
 
     if k == 0:
         return 2, []
@@ -119,7 +181,7 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
     else:
         if k % 2 == 0:
             # We want to return k//2 * P + k//2 * P
-            ret_code, l = elliptic_multiplication(n, a, b, x, y, k//2)
+            ret_code, l = quick_elliptic_multiplication(n, a, b, x, y, k // 2)
 
             # However we must check if k//2 * P is indeed a true point or not.
             if ret_code == 1:
@@ -130,7 +192,7 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
 
         else:
             # We want to return P * k//2 * P + k//2 * P
-            ret_code, l = elliptic_multiplication(n, a, b, x, y, (k - 1) // 2)
+            ret_code, l = quick_elliptic_multiplication(n, a, b, x, y, (k - 1) // 2)
             if ret_code == 1:
                 x2, y2 = l
                 ret_code2, l2 = elliptic_addition(n, a, b, x2, y2)
@@ -149,7 +211,7 @@ def lenstra(n: int):
     """
     a, b, x, y = create_random_elliptic(n)
     k = fact(20)
-    ret_code, res = elliptic_multiplication(n, a, b, x, y, k)
+    ret_code, res = quick_elliptic_multiplication(n, a, b, x, y, k)
     if ret_code == 0:
         return res
     else:
@@ -157,4 +219,5 @@ def lenstra(n: int):
 
 
 if __name__ == "__main__":
-    print(lenstra(7919 * 7321))
+    print(lenstra(2*3))
+    #plot_elliptic_in_z(59, True)
