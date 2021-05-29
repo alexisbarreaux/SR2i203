@@ -161,6 +161,30 @@ def elliptic_addition(n: int, a: int, b: int, x_p: int, y_p: int, x_q: int = -1,
     return 1, [x_r, y_r]
 
 
+def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
+    """
+    Method used to compute k times the point P = (x, y) on an elliptic curve.
+    """
+    assert (type(k) == int)
+
+    if k == 0:
+        return 2, []
+    elif k == 1:
+        # We return P
+        return 1, [x, y]
+    elif k == 2:
+        # We return the result of P + P
+        return elliptic_addition(n, a, b, x, y)
+    else:
+        ret_code, l = elliptic_multiplication(n, a, b, x, y, k - 1)
+        # However we must check if (k- 1) * P is indeed a true point or not.
+        if ret_code == 1:
+            x2, y2 = l
+            return elliptic_addition(n, a, b, x, y, x2, y2)
+        else:
+            return ret_code, l
+
+
 # This function is working but might not be needed since calculating k * P this way may go over a case where
 # j * P returns an error and a factor of n, with j < k and overlooked by this method.
 def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
@@ -205,13 +229,17 @@ def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int
                 return ret_code, l
 
 
-def lenstra(n: int):
+def lenstra(n: int, quick= True):
     """
     Method resorting to elliptic curves to try and find a factor of n.
     """
     a, b, x, y = create_random_elliptic(n)
     k = fact(20)
-    ret_code, res = quick_elliptic_multiplication(n, a, b, x, y, k)
+    if quick:
+        ret_code, res = quick_elliptic_multiplication(n, a, b, x, y, k)
+    else:
+        ret_code, res = elliptic_multiplication(n, a, b, x, y, k)
+
     if ret_code == 0:
         return res
     else:
