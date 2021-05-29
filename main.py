@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 from math import factorial as fact
-
+from time import time
 
 # https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization#Algorithm
 # https://stackoverflow.com/questions/31074172/elliptic-curve-point-addition-over-a-finite-field-in-python
 
+sys.setrecursionlimit(10000)
 
 def valid_point(x: int, y: int, a: int, b: int, n: int):
     """
@@ -65,7 +67,7 @@ def plot_elliptic_real_curve(n: int):
     plt.show()
 
 
-def plot_elliptic_in_z(n: int, plot_points = False):
+def plot_elliptic_in_z(n: int, plot_points=False):
     """
     Plots an elliptic curve on Z/nZ, can also add points calculated on it.
     :param n: The n in Z/nZ
@@ -98,7 +100,7 @@ def plot_elliptic_in_z(n: int, plot_points = False):
                 x, y = l
                 sum_x.append(x)
                 sum_y.append(y)
-                ax.annotate(f"{i+2}P", (x, y), xytext=(10, 10), textcoords='offset points')
+                ax.annotate(f"{i + 2}P", (x, y), xytext=(10, 10), textcoords='offset points')
 
         plt.scatter(sum_x, sum_y, marker="x", c="r")
 
@@ -229,12 +231,13 @@ def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int
                 return ret_code, l
 
 
-def lenstra(n: int, quick= True):
+def lenstra(n: int, quick=True, loop=0, fact_size = 7):
     """
     Method resorting to elliptic curves to try and find a factor of n.
+    Loop helps to ensure we don't have an infinite recursion
     """
     a, b, x, y = create_random_elliptic(n)
-    k = fact(20)
+    k = fact(fact_size)
     if quick:
         ret_code, res = quick_elliptic_multiplication(n, a, b, x, y, k)
     else:
@@ -243,9 +246,68 @@ def lenstra(n: int, quick= True):
     if ret_code == 0:
         return res
     else:
-        return lenstra(n)
+        if loop <= 5:
+            return lenstra(n, quick, loop + 1)
+        else:
+            return res
+
+
+def list_primes(n: int):
+    """
+    Function using our lenstra function to list primes.
+    :param n: The maximum integer whose primality we want to test.
+    :return:
+    """
+    a = np.arange(3, n + 1)
+    primes = [2]
+    for i in a:
+        res = lenstra(int(i))
+        if len(res) in [0, 2]:
+            primes.append(i)
+
+    return primes
+
+
+def study_speed_lenstra(n: int, k: int):
+    primes = list_primes(n)
+    N = len(primes)
+    times_slow = []
+    times_quick = []
+    x_slow = []
+    x_quick = []
+
+    for _ in range(k):
+        a = np.random.randint(N)
+        b = np.random.randint(N)
+        n = int(primes[a]*primes[b])
+
+        t = time()
+        res_slow = lenstra(n, False)
+        if len(res_slow) == 1:
+            times_slow.append(time() - t)
+            x_slow.append(n)
+
+        t= time()
+        res_quick = lenstra(n)
+        if len(res_quick) == 1:
+            times_quick.append(time() -t)
+            x_quick.append(n)
+
+    plt.clf()
+    plt.title("Study on the time efficiency \n of the normal multiplication and our quick version.")
+    plt.grid()
+    plt.xlabel("Integer to factorize")
+    plt.ylabel("Time")
+    plt.scatter(x_slow, times_slow, marker="x", c="r", label="Normal")
+    plt.scatter(x_quick, times_quick, marker="+", c="b", label="Fast multiplication")
+    plt.legend()
+    plt.show()
+
+    print(len(x_slow), len(x_quick), len(primes))
+    return
 
 
 if __name__ == "__main__":
-    print(lenstra(2*3))
-    #plot_elliptic_in_z(59, True)
+    #print(lenstra(2 * 3))
+    # plot_elliptic_in_z(59, True)
+    study_speed_lenstra(2000, 250)
