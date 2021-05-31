@@ -1,3 +1,4 @@
+# https://viresinnumeris.fr/comprendre-bitcoin-cles-et-adresses/
 import os
 import hashlib
 
@@ -90,6 +91,23 @@ def getPublicKey(privkey):
     return address
 
 
+def getCompressedPublicKey(privkey):
+    SPEC256k1 = Point()
+    pk = int.from_bytes(privkey, "big")
+    pub = SPEC256k1 * pk
+    pub_compressed = b""
+    if pub.y % 2 == 0:
+        pub_compressed += b"\x02"
+    else:
+        pub_compressed += b"\x03"
+    pub_compressed += pub.x.to_bytes(32, "big")
+    hash160 = ripemd160(sha256(pub_compressed))
+    address = b"\x00" + hash160
+
+    address = b58(address + sha256(sha256(address))[:4])
+    return address
+
+
 def getWif(privkey):
     wif = b"\x80" + privkey
     wif = b58(wif + sha256(sha256(wif))[:4])
@@ -98,5 +116,9 @@ def getWif(privkey):
 
 if __name__ == "__main__":
     randomBytes = os.urandom(32)
+    randomBytes = bytes.fromhex(
+        "0000000000000000000000000000000000000000000000000000000000000007")
     print("Address: " + getPublicKey(randomBytes))
+    print("Compressed address: " + getCompressedPublicKey(randomBytes))
+    # print("Copressed address: " + getCompressedPublicKey(randomBytes))
     print("Privkey: " + getWif(randomBytes))
