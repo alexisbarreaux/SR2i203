@@ -8,6 +8,8 @@ def bruteforce(compressedPubKey, min=1, max=2**256-1):
 
 
 if __name__ == '__main__':
+    # Clé associée à k = 7
     print(bruteforce("19ZewH8Kk1PDbSNdJ97FP4EiCjTRaZMZQA"))
     print(bruteforce("1EhqbyUMvvs7BfL8goY6qcPbD6YKfPqb7e"))
+    # Clé associée à k = 8
     print(bruteforce("1CQFwcjw1dwhtkVWBttNLDtqL7ivBonGPV"))

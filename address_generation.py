@@ -115,10 +115,11 @@ def getWif(privkey):
 
 
 if __name__ == "__main__":
+    #k = bytes.fromhex("6ef6b8ddb7d09b14a3f5239b1d76ed943bc697765ffd242baf08e532cdbe6197")
     randomBytes = os.urandom(32)
     randomBytes = bytes.fromhex(
         "0000000000000000000000000000000000000000000000000000000000000007")
     print("Address: " + getPublicKey(randomBytes))
     print("Compressed address: " + getCompressedPublicKey(randomBytes))
-    # print("Copressed address: " + getCompressedPublicKey(randomBytes))
+    # print("Compressed address: " + getCompressedPublicKey(randomBytes))
     print("Privkey: " + getWif(randomBytes))
