@@ -1,6 +1,8 @@
 # https://viresinnumeris.fr/comprendre-bitcoin-cles-et-adresses/
 import os
+import timeit
 import hashlib
+import numpy as np
 
 
 def sha256(data):
@@ -34,7 +36,7 @@ class Point:
     def __init__(self,
                  x=0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
                  y=0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8,
-                 p=2**256 - 2**32 - 2**9 - 2**8 - 2**7 - 2**6 - 2**4 - 1):
+                 p=2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1):
         self.x = x
         self.y = y
         self.p = p
@@ -66,9 +68,9 @@ class Point:
         p = self.p
 
         if self == other:
-            l = pow(2 * y2 % p, p-2, p) * (3 * x2 * x2) % p
+            l = pow(2 * y2 % p, p - 2, p) * (3 * x2 * x2) % p
         else:
-            l = pow(x1 - x2, p-2, p) * (y1 - y2) % p
+            l = pow(x1 - x2, p - 2, p) * (y1 - y2) % p
 
         newX = (l ** 2 - x2 - x1) % p
         newY = (l * x2 - l * newX - y2) % p
@@ -91,9 +93,17 @@ def getPublicKey(privkey):
     return address
 
 
-def getCompressedPublicKey(privkey):
+def getCompressedPublicKey(pk):
+    if type(pk) in [int, np.int32]:
+        pass
+    elif type(pk) == bytes:
+        pk = int.from_bytes(pk, "big")
+    elif type(pk) == hex:
+        pk = int.from_bytes(bytes.fromhex(pk), "big")
+    else:
+        raise (Exception("Unhandled type for pk"))
+
     SPEC256k1 = Point()
-    pk = int.from_bytes(privkey, "big")
     pub = SPEC256k1 * pk
     pub_compressed = b""
     if pub.y % 2 == 0:
@@ -114,8 +124,13 @@ def getWif(privkey):
     return wif
 
 
+def time_test():
+    #timeit.timeit(stmt=getCompressedPublicKey(k))
+    return
+
+
 if __name__ == "__main__":
-    #k = bytes.fromhex("6ef6b8ddb7d09b14a3f5239b1d76ed943bc697765ffd242baf08e532cdbe6197")
+    # k = bytes.fromhex("6ef6b8ddb7d09b14a3f5239b1d76ed943bc697765ffd242baf08e532cdbe6197")
     randomBytes = os.urandom(32)
     randomBytes = bytes.fromhex(
         "0000000000000000000000000000000000000000000000000000000000000007")
