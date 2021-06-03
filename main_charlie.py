@@ -1,4 +1,4 @@
-from address_generation import getCompressedPublicKey
+from main import getCompressedPublicKey, rng
 import matplotlib.pyplot as plt
 import numpy as np
 from time import time
@@ -14,7 +14,7 @@ def bit_to_range(n: int):
 
 
 def naive_bruteforce(compressedPubKey, n_bits=256):
-    assert (type(n_bits) in [int, np.int32] and 0 <= n_bits <= 256)
+    assert (type(n_bits) in [int, np.int32, np.int64] and 0 <= n_bits <= 256)
     max_priv = bit_to_range(n_bits)
     for privKey in range(1, max_priv + 1):
         if getCompressedPublicKey(privKey.to_bytes(32, "big")) == compressedPubKey:
@@ -23,19 +23,16 @@ def naive_bruteforce(compressedPubKey, n_bits=256):
     return -1
 
 
-def plot_naive(s_max=11, N=50):
+def plot_naive(s_max=20, N=50):
     """
     Function to plot the time efficiency of the very first naive bruteforce.
     """
-    size_range = np.arange(1, s_max)
+    size_range = np.arange(1, s_max, dtype=np.int64)
     times = np.zeros(len(size_range))
-
     for size in size_range:
-        print(size)
-        for i in range(N):
-            k = np.random.randint(1, bit_to_range(size) + 1)
-            byte_k = k.to_bytes(32, "big")
-            addr_pub = getCompressedPublicKey(byte_k)
+        priv_keys = rng.integers(pow(2, size - 1), pow(2, size), N)
+        for k in priv_keys:
+            addr_pub = getCompressedPublicKey(k)
 
             t = time()
             pk = naive_bruteforce(addr_pub, size)
@@ -49,7 +46,7 @@ def plot_naive(s_max=11, N=50):
 
 
     plt.clf()
-    plt.title(f"Times on {N} random keys for each size between 1 and {s_max}.")
+    plt.title(f"Times on {N} random keys between 2^(size -1) and 2^size.")
     plt.grid()
     plt.xlabel("Size of the private key")
     plt.ylabel("Time")
@@ -59,7 +56,7 @@ def plot_naive(s_max=11, N=50):
 
 
 if __name__ == '__main__':
-    plot_naive(5)
+    plot_naive(14, 10)
     """
     # Clé associée à k = 7
     print(naive_bruteforce("19ZewH8Kk1PDbSNdJ97FP4EiCjTRaZMZQA"))
