@@ -4,7 +4,6 @@ import timeit
 from time import time
 import hashlib
 from numpy import random, int32
-from main import quick_elliptic_multiplication
 
 
 def sha256(data):
@@ -85,9 +84,17 @@ class Point:
         return b"\x04" + x + y
 
 
-def getPublicKey(privkey):
+def getPublicKey(pk):
+    if type(pk) in [int, int32]:
+        pass
+    elif type(pk) == bytes:
+        pk = int.from_bytes(pk, "big")
+    elif type(pk) == hex:
+        pk = int.from_bytes(bytes.fromhex(pk), "big")
+    else:
+        raise (Exception("Unhandled type for pk"))
+
     SPEC256k1 = Point()
-    pk = int.from_bytes(privkey, "big")
     hash160 = ripemd160(sha256((SPEC256k1 * pk).toBytes()))
     address = b"\x00" + hash160
 
@@ -151,6 +158,8 @@ if __name__ == "__main__":
     # print("Compressed address: " + getCompressedPublicKey(randomBytes))
     print("Privkey: " + getWif(randomBytes))
     """
+
+    """
     k = pow(2, 31) # random.randint(1, pow(2, 31))
     print(k)
 
@@ -169,5 +178,5 @@ if __name__ == "__main__":
     t = time()
     print(quick_elliptic_multiplication(p, a, b, x, y, k))
     print("Time quick", time() - t)
-
+    """
     # python -m cProfile address_generation.py

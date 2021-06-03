@@ -3,7 +3,12 @@ import matplotlib.pyplot as plt
 import sys
 from math import factorial as fact
 from time import time
+import timeit
+import hashlib
+from address_generation import getPublicKey as classGetpub
+from address_generation import getCompressedPublicKey as classGetCompPup
 
+# https://viresinnumeris.fr/comprendre-bitcoin-cles-et-adresses/
 # https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization#Algorithm
 # https://stackoverflow.com/questions/31074172/elliptic-curve-point-addition-over-a-finite-field-in-python
 
@@ -265,7 +270,7 @@ def lenstra(n: int, quick=True, use_loop=True, loop=1, fact_size=7, ret_loop=Fal
                 return res, loop
             return res
         else:
-            return lenstra(n, quick, use_loop, loop + 1,fact_size, ret_loop)
+            return lenstra(n, quick, use_loop, loop + 1, fact_size, ret_loop)
 
 
 # Slow but useful method
@@ -285,122 +290,132 @@ def list_primes(n: int):
     return primes
 
 
-def study_speed_lenstra(n: int, k: int):
-    primes = list_primes(n)
-    N = len(primes)
-    times_slow = []
-    times_quick = []
-    x_slow = []
-    x_quick = []
+def sha256(data):
+    digest = hashlib.new("sha256")
+    digest.update(data)
+    return digest.digest()
 
-    for _ in range(k):
-        a = np.random.randint(N)
-        b = np.random.randint(N)
-        # We don't want the same prime twice.
-        if a == b:
-            b = (a + 1) % len(primes)
 
-        n = int(primes[a] * primes[b])
+def ripemd160(x):
+    d = hashlib.new("ripemd160")
+    d.update(x)
+    return d.digest()
 
-        t = time()
-        res_slow = lenstra(n, False)
-        if len(res_slow) == 1:
-            times_slow.append(time() - t)
-            x_slow.append(n)
 
-        t = time()
-        res_quick = lenstra(n)
-        if len(res_quick) == 1:
-            times_quick.append(time() - t)
-            x_quick.append(n)
+def b58(data):
+    B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
-    res = np.array(times_slow) / np.array(times_quick)
-    plt.clf()
-    plt.title("Study on the time ratio \n between normal multiplication and our quick version.")
-    plt.grid()
-    plt.xlabel("Integer to factorize")
-    plt.ylabel("Time difference")
-    plt.scatter(x_slow, res, marker="x", c="b", label="Normal time / Quick time")
-    plt.legend()
-    plt.show()
+    if data[0] == 0:
+        return "1" + b58(data[1:])
 
+    x = sum([v * (256 ** i) for i, v in enumerate(data[::-1])])
+    ret = ""
+    while x > 0:
+        ret = B58[x % 58] + ret
+        x = x // 58
+
+    return ret
+
+
+def getPublicKey(pk,
+                 x_gene=0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+                 y_gene=0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8,
+                 a=0,
+                 b=7,
+                 n=2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1):
     """
-    res = np.array(times_slow) - np.array(times_quick)
-    plt.clf()
-    plt.title("Study on the time difference \n between normal multiplication and our quick version.")
-    plt.grid()
-    plt.xlabel("Integer to factorize")
-    plt.ylabel("Time difference")
-    plt.scatter(x_slow, res, marker="x", c="b", label="Normal time - Quick time")
-    plt.legend()
-    plt.show()
+    Function to get the public key from a private key on SPEC256k1
+    :param privkey: the private key
+    :param x_gene: absciss of the generator we want to use
+    :param y_gene: ordinate of the generator we want to use
+    :param a: parameter of our curve
+    :param b: parameter of our curve
+    :param n: parameter of our curve
+    :return:
     """
+    if type(pk) in [int, np.int32]:
+        pass
+    elif type(pk) == bytes:
+        pk = int.from_bytes(pk, "big")
+    elif type(pk) == hex:
+        pk = int.from_bytes(bytes.fromhex(pk), "big")
+    else:
+        raise (Exception("Unhandled type for pk"))
 
+    ret, pub_key = quick_elliptic_multiplication(n, a, b, x_gene, y_gene, pk)
+    if ret != 1:
+        raise Exception("Error computing public key, are you sure you gave a valid curve ?")
+
+    x_pub, y_pub = pub_key
+
+    pub_byte = b"\x04" + x_pub.to_bytes(32, "big") + y_pub.to_bytes(32, "big")
+
+    hash160 = ripemd160(sha256(pub_byte))
+    address = b"\x00" + hash160
+    address = b58(address + sha256(sha256(address))[:4])
+    return address
+
+
+def getCompressedPublicKey(pk,
+                           x_gene=0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+                           y_gene=0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8,
+                           a=0,
+                           b=7,
+                           n=2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1):
     """
-    plt.clf()
-    plt.title("Study on the time efficiency \n of the normal multiplication and our quick version.")
-    plt.grid()
-    plt.xlabel("Integer to factorize")
-    plt.ylabel("Time")
-    plt.scatter(x_slow, times_slow, marker="x", c="r", label="Normal")
-    plt.scatter(x_quick, times_quick, marker="+", c="b", label="Fast multiplication")
-    plt.legend()
-    plt.show()
+    Function to get the compressed public key from a private key on SPEC256k1
+    :param privkey: the private key
+    :param x_gene: absciss of the generator we want to use
+    :param y_gene: ordinate of the generator we want to use
+    :param a: parameter of our curve
+    :param b: parameter of our curve
+    :param n: parameter of our curve
+    :return:
     """
-    print(len(x_slow), len(x_quick), k)
+    if type(pk) in [int, np.int32]:
+        pass
+    elif type(pk) == bytes:
+        pk = int.from_bytes(pk, "big")
+    elif type(pk) == hex:
+        pk = int.from_bytes(bytes.fromhex(pk), "big")
+    else:
+        raise (Exception("Unhandled type for pk"))
 
-    return
+    ret, pub_key = quick_elliptic_multiplication(n, a, b, x_gene, y_gene, pk)
+    x_pub, y_pub = pub_key
 
-
-def study_loops(n: int, k: int):
-    primes = list_primes(n)
-    N = len(primes)
-    loops = []
-
-    for _ in range(k):
-        a = np.random.randint(N)
-        b = np.random.randint(N)
-        # We don't want the same prime twice.
-        if a == b:
-            b = (a + 1) % len(primes)
-
-        n = int(primes[a] * primes[b])
-        res_quick, loop = lenstra(n, True, True, 1, 7, True)
-        if len(res_quick) == 1:
-            loops.append(loop)
-
-    loops = np.array(loops)
-    counts = np.bincount(loops)
-    freq = 100*(counts / len(loops))
-    y = np.zeros(30)
-
-    for i in range(len(freq)):
-        y[i] = freq[i]
-
-    x = np.arange(30)
-    plt.clf()
-    plt.title(f"Frequency of each loop size on {k} integers.")
-    plt.grid()
-    plt.xlabel("Number of loops")
-    plt.ylabel("Frequency")
-    plt.scatter(x, y, marker="x", c="b", label="Frequencies")
-    plt.legend()
-    plt.show()
+    pub_compressed = b""
+    if y_pub % 2 == 0:
+        pub_compressed += b"\x02"
+    else:
+        pub_compressed += b"\x03"
+    pub_compressed += x_pub.to_bytes(32, "big")
+    hash160 = ripemd160(sha256(pub_compressed))
+    address = b"\x00" + hash160
+    address = b58(address + sha256(sha256(address))[:4])
+    return address
 
 
 if __name__ == "__main__":
     # print(lenstra(2 * 3))
     # plot_elliptic_in_z(59, True)
     # study_speed_lenstra(5000, 100)
-    #study_loops(50000, 10000)
-
+    # study_loops(50000, 10000)
+    """
+    k = np.random.randint(1, pow(2, 5))
     p = 2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1
     a = 0
     b = 7
     x = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
     y = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
-    k = np.random.randint(1, pow(2, 5))
-
+    
     t = time()
     print(quick_elliptic_multiplication(p, a, b, x, y, k))
     print(time() - t)
+
+    """
+    k = np.random.randint(1, pow(2, 5))
+    print(classGetpub(k))
+    print(classGetCompPup(k))
+    print(getPublicKey(k))
+    print(getCompressedPublicKey(k))
