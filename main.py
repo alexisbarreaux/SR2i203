@@ -392,4 +392,15 @@ if __name__ == "__main__":
     # print(lenstra(2 * 3))
     # plot_elliptic_in_z(59, True)
     # study_speed_lenstra(5000, 100)
-    study_loops(50000, 10000)
+    #study_loops(50000, 10000)
+
+    p = 2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1
+    a = 0
+    b = 7
+    x = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+    y = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+    k = np.random.randint(1, pow(2, 5))
+
+    t = time()
+    print(quick_elliptic_multiplication(p, a, b, x, y, k))
+    print(time() - t)

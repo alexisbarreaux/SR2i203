@@ -1,8 +1,10 @@
 # https://viresinnumeris.fr/comprendre-bitcoin-cles-et-adresses/
 import os
 import timeit
+from time import time
 import hashlib
-import numpy as np
+from numpy import random, int32
+from main import quick_elliptic_multiplication
 
 
 def sha256(data):
@@ -94,7 +96,7 @@ def getPublicKey(privkey):
 
 
 def getCompressedPublicKey(pk):
-    if type(pk) in [int, np.int32]:
+    if type(pk) in [int, int32]:
         pass
     elif type(pk) == bytes:
         pk = int.from_bytes(pk, "big")
@@ -125,11 +127,21 @@ def getWif(privkey):
 
 
 def time_test():
-    #timeit.timeit(stmt=getCompressedPublicKey(k))
+    setup = "import numpy as np; " \
+            "from address_generation import getCompressedPublicKey;" \
+            " k = np.random.randint(1, pow(2, 5))"
+    return print(timeit.timeit(stmt='getCompressedPublicKey(k)', setup=setup, number=5))
+
+
+def profile_test():
+    for _ in range(10):
+        k = random.randint(1, pow(2, 5))
+        getCompressedPublicKey(k)
     return
 
 
 if __name__ == "__main__":
+    """
     # k = bytes.fromhex("6ef6b8ddb7d09b14a3f5239b1d76ed943bc697765ffd242baf08e532cdbe6197")
     randomBytes = os.urandom(32)
     randomBytes = bytes.fromhex(
@@ -138,3 +150,24 @@ if __name__ == "__main__":
     print("Compressed address: " + getCompressedPublicKey(randomBytes))
     # print("Compressed address: " + getCompressedPublicKey(randomBytes))
     print("Privkey: " + getWif(randomBytes))
+    """
+    k = pow(2, 31) # random.randint(1, pow(2, 31))
+    print(k)
+
+    SPEC256k1 = Point()
+    t = time()
+    pub = SPEC256k1 * k
+    print(pub.x, pub.y)
+    print("Time foudn", time() - t)
+
+
+    p = 2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1
+    a = 0
+    b = 7
+    x = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+    y = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+    t = time()
+    print(quick_elliptic_multiplication(p, a, b, x, y, k))
+    print("Time quick", time() - t)
+
+    # python -m cProfile address_generation.py
