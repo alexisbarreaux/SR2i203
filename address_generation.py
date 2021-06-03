@@ -3,7 +3,7 @@ import os
 import timeit
 from time import time
 import hashlib
-from numpy import random, int32
+import numpy as np
 
 
 def sha256(data):
@@ -85,7 +85,7 @@ class Point:
 
 
 def getPublicKey(pk):
-    if type(pk) in [int, int32]:
+    if type(pk) in [int, np.int32, np.int64]:
         pass
     elif type(pk) == bytes:
         pk = int.from_bytes(pk, "big")
@@ -103,7 +103,7 @@ def getPublicKey(pk):
 
 
 def getCompressedPublicKey(pk):
-    if type(pk) in [int, int32]:
+    if type(pk) in [int, np.int32, np.int64]:
         pass
     elif type(pk) == bytes:
         pk = int.from_bytes(pk, "big")
@@ -142,7 +142,7 @@ def time_test():
 
 def profile_test():
     for _ in range(10):
-        k = random.randint(1, pow(2, 5))
+        k = np.random.randint(1, pow(2, 5))
         getCompressedPublicKey(k)
     return
 

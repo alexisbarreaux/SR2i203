@@ -13,7 +13,7 @@ from address_generation import getCompressedPublicKey as classGetCompPup
 # https://stackoverflow.com/questions/31074172/elliptic-curve-point-addition-over-a-finite-field-in-python
 
 sys.setrecursionlimit(10000)
-
+rng = np.random.default_rng()
 
 def valid_point(x: int, y: int, a: int, b: int, n: int):
     """
@@ -34,7 +34,7 @@ def create_random_point(n: int):
     :param n: the order of the Z/nZ space.
     :return: A tuple of two int values.
     """
-    return np.random.randint(n), np.random.randint(n)
+    return rng.integers(n), rng.integers(n)
 
 
 # TODO use other specific types of curves such as Edward curves ?
@@ -48,7 +48,7 @@ def create_random_elliptic(n: int):
     :return: A list consisting of 4 int values which are respectively a, b, x_{0} and y_{0}
     """
     x_0, y_0 = create_random_point(n)
-    a = np.random.randint(n)
+    a = rng.integers(n)
     b = (pow(y_0, 2, n) - pow(x_0, 3, n) - a * x_0) % n
 
     if 4 * pow(a, 3, n) + 27 * pow(b, 2, n) == 0:
@@ -173,7 +173,7 @@ def elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int):
     """
     Method used to compute k times the point P = (x, y) on an elliptic curve.
     """
-    assert (type(k) == int)
+    assert (type(k) in [np.int64, np.int32, int])
 
     if k == 0:
         return 2, []
@@ -203,7 +203,7 @@ def quick_elliptic_multiplication(n: int, a: int, b: int, x: int, y: int, k: int
     """
     Method inspired of quick exponentiation used to compute k times the point P = (x, y) on an elliptic curve.
     """
-    assert (type(k) == int)
+    assert (type(k) in [np.int64, np.int32, int])
 
     if k == 0:
         return 2, []
@@ -333,7 +333,7 @@ def getPublicKey(pk,
     :param n: parameter of our curve
     :return:
     """
-    if type(pk) in [int, np.int32]:
+    if type(pk) in [int, np.int32, np.int64]:
         pass
     elif type(pk) == bytes:
         pk = int.from_bytes(pk, "big")
@@ -372,7 +372,7 @@ def getCompressedPublicKey(pk,
     :param n: parameter of our curve
     :return:
     """
-    if type(pk) in [int, np.int32]:
+    if type(pk) in [int, np.int32, np.int64]:
         pass
     elif type(pk) == bytes:
         pk = int.from_bytes(pk, "big")
@@ -397,12 +397,8 @@ def getCompressedPublicKey(pk,
 
 
 if __name__ == "__main__":
-    # print(lenstra(2 * 3))
-    # plot_elliptic_in_z(59, True)
-    # study_speed_lenstra(5000, 100)
-    # study_loops(50000, 10000)
     """
-    k = np.random.randint(1, pow(2, 5))
+    k = rng.integers(1, pow(2, 5))
     p = 2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1
     a = 0
     b = 7
@@ -414,7 +410,7 @@ if __name__ == "__main__":
     print(time() - t)
 
     """
-    k = np.random.randint(1, pow(2, 5))
+    k = rng.integers(1, pow(2, 5))
     print(classGetpub(k))
     print(classGetCompPup(k))
     print(getPublicKey(k))

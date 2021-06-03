@@ -1,6 +1,5 @@
 from main import *
 
-
 def study_speed_lenstra(n: int, k: int):
     primes = list_primes(n)
     N = len(primes)
@@ -102,3 +101,35 @@ def study_loops(n: int, k: int):
     plt.scatter(x, y, marker="x", c="b", label="Frequencies")
     plt.legend()
     plt.show()
+
+
+def study_speed_comp_addr(n: int):
+    N = 60
+    sizes = np.arange(1, N, dtype=np.int64)
+    times = np.zeros(N - 1, dtype=np.float)
+    for size in sizes:
+        priv_keys = rng.integers(pow(2, size - 1), pow(2, size), n)
+        for pk in priv_keys:
+            t = time()
+            getCompressedPublicKey(pk)
+            times[size - 1] += time() - t
+
+    times /= n
+
+    plt.clf()
+    plt.title(f"Mean time execution of getCompressedPublicKey \n on {n} random keys between 2^(size - 1) and 2^(size)")
+    plt.grid()
+    plt.xlabel("Size : taille en bit de la clé privée")
+    plt.ylabel("Time")
+    plt.scatter(sizes, times, marker="x", c="b")
+    #plt.legend()
+    plt.show()
+    return
+
+
+if __name__ == "__main__":
+    # print(lenstra(2 * 3))
+    # plot_elliptic_in_z(59, True)
+    # study_speed_lenstra(5000, 100)
+    # study_loops(50000, 10000)
+    study_speed_comp_addr(100)
