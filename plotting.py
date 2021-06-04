@@ -168,4 +168,5 @@ if __name__ == "__main__":
     # plot_elliptic_in_z(59, True)
     # study_speed_lenstra(5000, 100)
     # study_loops(50000, 10000)
-    study_speed_comp_addr(50, 50)
+    #study_speed_comp_addr(50, 50)
+    plot_naive(15, 5)

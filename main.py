@@ -15,6 +15,7 @@ from address_generation import getCompressedPublicKey as classGetCompPup
 sys.setrecursionlimit(10000)
 rng = np.random.default_rng()
 
+
 def valid_point(x: int, y: int, a: int, b: int, n: int):
     """
     Checks if a points is on an elliptic curve given by parameters.
@@ -51,6 +52,7 @@ def create_random_elliptic(n: int):
     x_0 = int(x_0)
     y_0 = int(y_0)
     a = int(rng.integers(n))
+    n = int(n)
     b = (pow(y_0, 2, n) - pow(x_0, 3, n) - a * x_0) % n
 
     if 4 * pow(a, 3, n) + 27 * pow(b, 2, n) == 0:
@@ -384,7 +386,11 @@ def getCompressedPublicKey(pk,
         raise (Exception("Unhandled type for pk"))
 
     ret, pub_key = quick_elliptic_multiplication(n, a, b, x_gene, y_gene, pk)
-    x_pub, y_pub = pub_key
+    if ret == 1:
+        x_pub, y_pub = pub_key
+    else:
+        print(pk)
+        return "XX"
 
     pub_compressed = b""
     if y_pub % 2 == 0:
@@ -413,7 +419,8 @@ if __name__ == "__main__":
 
     """
     k = rng.integers(1, pow(2, 5))
-    print(classGetpub(k))
-    print(classGetCompPup(k))
+    # print(classGetpub(k))
+    # print(classGetCompPup(k))
+    print(k)
     print(getPublicKey(k))
-    print(getCompressedPublicKey(k))
+    # print(getCompressedPublicKey(k))
