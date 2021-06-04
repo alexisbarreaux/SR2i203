@@ -36,7 +36,7 @@ def get_time_uniform_ranges(n_bits=256, n_split=4):
     for i in range(len(borders)):
         borders[i] = int(borders[i])
 
-    res = [borders[i] for i in range(1, len(borders))]
+    res = [int(borders[i]) for i in range(1, len(borders))]
     res.append(pow(2, n_bits))
     return res
 
