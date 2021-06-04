@@ -48,7 +48,9 @@ def create_random_elliptic(n: int):
     :return: A list consisting of 4 int values which are respectively a, b, x_{0} and y_{0}
     """
     x_0, y_0 = create_random_point(n)
-    a = rng.integers(n)
+    x_0 = int(x_0)
+    y_0 = int(y_0)
+    a = int(rng.integers(n))
     b = (pow(y_0, 2, n) - pow(x_0, 3, n) - a * x_0) % n
 
     if 4 * pow(a, 3, n) + 27 * pow(b, 2, n) == 0:

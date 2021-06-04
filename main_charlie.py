@@ -30,6 +30,7 @@ def plot_naive(s_max=20, N=50):
     size_range = np.arange(1, s_max, dtype=np.int64)
     times = np.zeros(len(size_range))
     for size in size_range:
+        compt = 0
         priv_keys = rng.integers(pow(2, size - 1), pow(2, size), N)
         for k in priv_keys:
             addr_pub = getCompressedPublicKey(k)
@@ -38,11 +39,13 @@ def plot_naive(s_max=20, N=50):
             pk = naive_bruteforce(addr_pub, size)
             if pk == k:
                 times[size - 1] += time() - t
+                compt += 1
             else:
                 print(k, pk)
                 raise(Exception("Bruteforce failed"))
 
-        times[size - 1] /= N
+        if compt != 0:
+            times[size - 1] /= compt
 
 
     plt.clf()
@@ -56,7 +59,7 @@ def plot_naive(s_max=20, N=50):
 
 
 if __name__ == '__main__':
-    plot_naive(14, 10)
+    plot_naive(10, 10)
     """
     # Clé associée à k = 7
     print(naive_bruteforce("19ZewH8Kk1PDbSNdJ97FP4EiCjTRaZMZQA"))
