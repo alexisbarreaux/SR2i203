@@ -1,4 +1,4 @@
-
+import cProfile
 from time import time
 import multiprocessing
 from main import getCompressedPublicKey, rng
@@ -7,7 +7,7 @@ import numpy as np
 
 
 def bruteforce(compressedPubKey: str, min: int, max: int, returnDict: dict) -> None:
-    for pk in range(min, max+1):
+    for pk in range(min, max + 1):
         if getCompressedPublicKey(pk) == compressedPubKey:
             returnDict["pk"] = pk
             return
@@ -24,12 +24,31 @@ def bruteforce2(compressedPubKey: str, n_bits: int, n_split: int, i: int, return
 
 def ranges(N, nb):
     step = N / nb
-    return [(round(step*i), round(step*(i+1))) for i in range(nb)]
+    return [(round(step * i), round(step * (i + 1))) for i in range(nb)]
 
 
 def get_uniform_ranges(n_bits=256, n_split=4):
-    res = ranges(pow(2, n_bits)-1, n_split)
-    res[0] = res[0][0]+1, res[0][1]
+    res = ranges(pow(2, n_bits) - 1, n_split)
+    res[0] = res[0][0] + 1, res[0][1]
+    return res
+
+
+def get_time_uniform_ranges(n_bits=256, n_split=4):
+    # Voir démo rapport
+    borders = np.ones(n_split)
+    total_value = pow(2, n_bits)
+    total_value = (total_value) * (total_value + 1) // 2
+    sub_value = total_value / n_split
+    for i in range(len(borders) - 1):
+        borders[i + 1] = 0.5 * \
+            np.sqrt(1 + 8*sub_value + 4 *
+                    pow(borders[i], 2) + 4 * borders[i]) - 1
+
+    for i in range(len(borders)):
+        borders[i] = int(borders[i])
+
+    res = [int(borders[i]) for i in range(1, len(borders))]
+    res.append(pow(2, n_bits))
     return res
 
 
@@ -41,8 +60,28 @@ def multi_processing_bruteforce(compressedPubKey: str, n_bits=256, n_split=4):
     returnDict = manager.dict()
 
     for r in ranges:
-        p = multiprocessing.Process(target=bruteforce, args=[
-                                    compressedPubKey, int(r[0]), int(r[1]), returnDict])
+        p = multiprocessing.Process(target=bruteforce,
+                                    args=(compressedPubKey, int(r[0]), int(r[1]), returnDict))
+        p.start()
+        processes.append(p)
+
+    while True:
+        if "pk" in returnDict.keys():
+            for p2 in processes:
+                p2.kill()
+            return returnDict["pk"]
+
+
+def multi_processing_bruteforce_v2(compressedPubKey: str, n_bits=256, n_split=4):
+    ranges = get_uniform_ranges(n_bits, n_split)
+
+    processes = []
+    manager = multiprocessing.Manager()
+    returnDict = manager.dict()
+
+    for r in ranges:
+        p = multiprocessing.Process(target=bruteforce,
+                                    args=(compressedPubKey, int(r[0]), int(r[1]), returnDict))
         p.start()
         processes.append(p)
 
@@ -91,7 +130,7 @@ def plot_multiprocessing(s_max=20, N=50):
                 times[i] += (time() - t)
             else:
                 print(k, pk)
-                raise(Exception("Bruteforce failed"))
+                raise (Exception("Bruteforce failed"))
 
         times[i] /= N
 
