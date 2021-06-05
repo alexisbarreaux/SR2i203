@@ -28,16 +28,16 @@ def get_time_uniform_ranges(n_bits=256, n_split=4):
     # Voir démo rapport
     borders = np.ones(n_split)
     total_value = pow(2, n_bits)
-    total_value = (total_value) * (total_value + 1) // 2
+    total_value = ((total_value) * (total_value + 1)) / 2
     sub_value = total_value / n_split
     for i in range(len(borders) - 1):
-        borders[i + 1] = 0.5 * np.sqrt(1 + 8*sub_value + 4 * pow(borders[i], 2) + 4 * borders[i]) - 1
+        borders[i + 1] = 0.5 * (np.sqrt(1 + 8 * sub_value + 4 * pow(borders[i], 2) + 4 * borders[i]) - 1)
 
     for i in range(len(borders)):
         borders[i] = int(borders[i])
 
-    res = [int(borders[i]) for i in range(1, len(borders))]
-    res.append(pow(2, n_bits))
+    res = [int(borders[i]) for i in range(len(borders))]
+    res.append(pow(2, n_bits) - 1)
     return res
 
 
@@ -116,9 +116,31 @@ def plot_multiprocessing(s_max=20, N=50):
     plt.show()
 
 
+def test_time_uniform_ranges(n_bits=256, n_split=4, intervals=[]):
+    if len(intervals) == 0:
+        intervals = get_time_uniform_ranges(n_bits, n_split)
+    times = np.zeros(n_split)
+
+    for i in range(len(intervals) - 1):
+        for j in range(intervals[i], intervals[i + 1]):
+            t = time()
+            getCompressedPublicKey(j)
+            times[i] += time() - t
+
+    return times / (np.sum(times))
+
+
 if __name__ == '__main__':
     # print(get_uniform_ranges())
-    #plot_multiprocessing(15, 1)
-    #print(multi_processing_bruteforce("1EhqbyUMvvs7BfL8goY6qcPbD6YKfPqb7e", 10, 4))
-    print(get_time_uniform_ranges(32, 4))
+    # plot_multiprocessing(15, 1)
+    # print(multi_processing_bruteforce("1EhqbyUMvvs7BfL8goY6qcPbD6YKfPqb7e", 10, 4))
+
+    for i in range(10, 15):
+        a = get_uniform_ranges(i, 4)
+        interval = [1]
+        for (c, d) in a:
+            interval.append(d)
+        print(interval)
+        print(test_time_uniform_ranges(i, 4, interval))
+
 
