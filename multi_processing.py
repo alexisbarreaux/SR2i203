@@ -97,8 +97,25 @@ def multi_processing_bruteforce2(compressedPubKey: str, n_bits=256, n_split=4):
     returnDict = manager.dict()
 
     for i in range(n_split):
-        p = multiprocessing.Process(target=bruteforce2, args=[
-                                    compressedPubKey, n_bits, n_split, i, returnDict])
+        p = multiprocessing.Process(target=bruteforce2, args=(compressedPubKey, n_bits, n_split, i, returnDict))
+        p.start()
+        processes.append(p)
+
+    while True:
+        if "pk" in returnDict.keys():
+            for p2 in processes:
+                p2.kill()
+            return returnDict["pk"]
+
+
+def multi_processing_bruteforce2(compressedPubKey: str, n_bits=256, n_split=4):
+
+    processes = []
+    manager = multiprocessing.Manager()
+    returnDict = manager.dict()
+
+    for i in range(n_split):
+        p = multiprocessing.Process(target=bruteforce2, args=(compressedPubKey, n_bits, n_split, i, returnDict))
         p.start()
         processes.append(p)
 
@@ -144,20 +161,6 @@ def plot_multiprocessing(s_max=20, N=50):
     plt.show()
 
 
-def test_time_uniform_ranges(n_bits=256, n_split=4, intervals=[]):
-    if len(intervals) == 0:
-        intervals = get_time_uniform_ranges(n_bits, n_split)
-    times = np.zeros(n_split)
-
-    for i in range(len(intervals) - 1):
-        for j in range(intervals[i], intervals[i + 1]):
-            t = time()
-            getCompressedPublicKey(j)
-            times[i] += time() - t
-
-    return times / (np.sum(times))
-
-
 def plot_multiprocessing2(s_max=20, N=50):
     """
     Function to plot the time efficiency of the very first naive bruteforce.
@@ -193,16 +196,48 @@ def plot_multiprocessing2(s_max=20, N=50):
     plt.show()
 
 
+def test_time_uniform_ranges(n_bits=256, n_split=4, intervals=[]):
+    if len(intervals) == 0:
+        intervals = get_time_uniform_ranges(n_bits, n_split)
+    times = np.zeros(n_split)
+
+    for i in range(len(intervals) - 1):
+        for j in range(intervals[i], intervals[i + 1]):
+            t = time()
+            getCompressedPublicKey(j)
+            times[i] += time() - t
+
+    return times / (np.sum(times))
+
+
+def test_time_slice(n_bits=256, n_split=4):
+    a = np.arange(1, pow(2, n_bits))
+    times = np.zeros(n_split)
+
+    for _ in range(5):
+        for i in range(n_split):
+            sub_a = a[i::4]
+            for j in sub_a:
+                t = time()
+                getCompressedPublicKey(j)
+                times[i] += time() - t
+
+    return times / (np.sum(times))
+
+
 if __name__ == '__main__':
     # print(get_uniform_ranges())
     # plot_multiprocessing(15, 1)
     # print(multi_processing_bruteforce("1EhqbyUMvvs7BfL8goY6qcPbD6YKfPqb7e", 10, 4))
-
-    for i in range(10, 15):
+    """
+    for i in range(5, 18):
         a = get_uniform_ranges(i, 4)
         interval = [1]
         for (c, d) in a:
             interval.append(d)
-        print(interval)
+        #print(interval)
         print(test_time_uniform_ranges(i, 4, interval))
+    """
 
+    for i in range(10, 14):
+        print(test_time_slice(i, 4))
