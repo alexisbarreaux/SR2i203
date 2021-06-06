@@ -22,6 +22,15 @@ def bruteforce2(compressedPubKey: str, n_bits: int, n_split: int, i: int, return
             return
 
 
+def bruteforce3(compressedPubKey: str, interval: list, returnDict: dict) -> None:
+    for pk in interval:
+        if pk == 0:
+            continue
+        if getCompressedPublicKey(pk) == compressedPubKey:
+            returnDict["pk"] = pk
+            return
+
+
 def ranges(N, nb):
     step = N / nb
     return [(round(step * i), round(step * (i + 1))) for i in range(nb)]
@@ -70,26 +79,6 @@ def multi_processing_bruteforce(compressedPubKey: str, n_bits=256, n_split=4):
             return returnDict["pk"]
 
 
-def multi_processing_bruteforce_v2(compressedPubKey: str, n_bits=256, n_split=4):
-    ranges = get_uniform_ranges(n_bits, n_split)
-
-    processes = []
-    manager = multiprocessing.Manager()
-    returnDict = manager.dict()
-
-    for r in ranges:
-        p = multiprocessing.Process(target=bruteforce,
-                                    args=(compressedPubKey, int(r[0]), int(r[1]), returnDict))
-        p.start()
-        processes.append(p)
-
-    while True:
-        if "pk" in returnDict.keys():
-            for p2 in processes:
-                p2.kill()
-            return returnDict["pk"]
-
-
 def multi_processing_bruteforce2(compressedPubKey: str, n_bits=256, n_split=4):
 
     processes = []
@@ -108,14 +97,17 @@ def multi_processing_bruteforce2(compressedPubKey: str, n_bits=256, n_split=4):
             return returnDict["pk"]
 
 
-def multi_processing_bruteforce2(compressedPubKey: str, n_bits=256, n_split=4):
+def multi_processing_bruteforce3(compressedPubKey: str, n_bits=256, n_split=4):
 
     processes = []
     manager = multiprocessing.Manager()
     returnDict = manager.dict()
+    ranges = np.arange(1, pow(2, n_bits))
 
     for i in range(n_split):
-        p = multiprocessing.Process(target=bruteforce2, args=(compressedPubKey, n_bits, n_split, i, returnDict))
+        sub_range = ranges[i::n_split]
+        np.random.shuffle(sub_range)
+        p = multiprocessing.Process(target=bruteforce2, args=(compressedPubKey, sub_range, returnDict))
         p.start()
         processes.append(p)
 
